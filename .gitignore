@@ -1,0 +1,44 @@
+# Node modules
+node_modules/
+
+# Env files
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Build
+dist/
+build/
+
+# Optional: if you use PM2 logs
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage from testing
+coverage/
+
+# Local database or dev files
+dump/
+*.bak
+*.db
+
+# AI cache (if any)
+*.ai-cache
