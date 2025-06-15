@@ -9,7 +9,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // MongoDB connect
-mongoose.connect("mongodb://localhost:27017/ecommerce-ai")
+mongoose.connect("mongodb+srv://thisismanishrajput:2025Boxers25@cluster0.t0f7y3g.mongodb.net/ecommerce-ai?retryWrites=true&w=majority")
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.error("MongoDB connection error:", err));
 
