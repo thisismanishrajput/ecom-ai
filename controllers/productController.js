@@ -1,9 +1,17 @@
-const Category = require("../models/category");
 const Product = require("../models/product");
+const generateEmbedding = require("../utils/geminiEmbedding");
 
 exports.addProduct = async (req, res) => {
   try {
-    const product = new Product(req.body);
+    const { name, description, tags, brand } = req.body;
+    const fullText = `${name} ${description} ${tags?.join(" ")} ${brand}`;
+
+    const embedding = await generateEmbedding(fullText);
+    if (!embedding) {
+      return res.status(500).json({ error: "Failed to generate embedding" });
+    }
+
+    const product = new Product({ ...req.body, embedding });
     await product.save();
     res.status(201).json(product);
   } catch (err) {
