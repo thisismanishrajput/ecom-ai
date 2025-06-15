@@ -1,13 +1,15 @@
 const mongoose = require("mongoose");
 
-const ProductSchema = new mongoose.Schema({
-  name: { type: String, required: true },
+const productSchema = new mongoose.Schema({
+  name: String,
   description: String,
-  price: { type: Number, required: true },
-  category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
-  gender: { type: String, enum: ["Men", "Women", "Unisex"], default: "Unisex" },
+  price: Number,
+  category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
+  gender: String,
   tags: [String],
   imageUrl: String,
+  brand: String, // optional, if you're supporting brand-based query
+  embedding: [Number], // NEW FIELD for vector embedding
 }, { timestamps: true });
 
-module.exports = mongoose.model("Product", ProductSchema);
+module.exports = mongoose.model("Product", productSchema);
