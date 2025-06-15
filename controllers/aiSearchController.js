@@ -2,20 +2,32 @@
 
 const Product = require("../models/product");
 const generateEmbedding = require("../utils/geminiEmbedding");
+const { parseQueryForFilters } = require("../utils/queryParser"); // <-- IMPORT THE PARSER
 
 exports.searchWithVector = async (req, res) => {
-  const { query: userQuery, filters } = req.body;
-
-  if (!userQuery) {
+  const rawUserQuery = req.body.query; // This is the full user sentence
+  
+  if (!rawUserQuery) {
     return res.status(400).json({ error: "Query is required" });
   }
 
   try {
-    const queryEmbedding = await generateEmbedding(userQuery);
+    // --- THIS IS THE NEW STEP ---
+    // 1. Parse the raw query to extract filters and a clean query for the vector search
+    const { cleanQuery, filters } = await parseQueryForFilters(rawUserQuery);
+    console.log(`Original Query: "${rawUserQuery}" -> Clean Query: "${cleanQuery}", Filters:`, filters);
+    // --- END OF NEW STEP ---
+    
+    // 2. Generate embedding from the CLEAN query. If the query is just a filter, it might be empty.
+    // In that case, we can use a generic term or the raw query. Let's use the raw query as a fallback.
+    const queryForEmbedding = cleanQuery || rawUserQuery;
+    const queryEmbedding = await generateEmbedding(queryForEmbedding);
+    
     if (!queryEmbedding) {
       return res.status(500).json({ error: "Failed to generate query embedding" });
     }
 
+    // 3. Build the vector search stage using the EXTRACTED filters
     const vectorSearchStage = {
       index: "vector_index",
       path: "embedding",
@@ -24,23 +36,10 @@ exports.searchWithVector = async (req, res) => {
       limit: 10,
     };
 
-    // --- CORRECTION: Build a standard MQL filter object ---
-    if (filters && Object.keys(filters).length > 0) {
-      // Create a standard MongoDB filter document.
-      // e.g., { gender: "Men", brand: "Dior" }
-      const mqlFilter = {};
-
-      if (filters.gender) {
-        mqlFilter.gender = filters.gender;
-      }
-      if (filters.brand) {
-        mqlFilter.brand = filters.brand;
-      }
-      
-      // Assign the MQL filter directly to the 'filter' property.
-      vectorSearchStage.filter = mqlFilter;
+    // If the parser found any filters, add the MQL filter clause
+    if (Object.keys(filters).length > 0) {
+      vectorSearchStage.filter = filters;
     }
-    // --- END OF CORRECTION ---
 
     const pipeline = [
       { $vectorSearch: vectorSearchStage },
@@ -60,7 +59,14 @@ exports.searchWithVector = async (req, res) => {
     ];
 
     const results = await Product.aggregate(pipeline);
-    res.json({ query: userQuery, filters: filters || {}, results });
+    
+    // Return the original query, the extracted filters, and the results for clarity
+    res.json({ 
+      originalQuery: rawUserQuery, 
+      extractedFilters: filters, 
+      queryUsedForEmbedding: queryForEmbedding,
+      results 
+    });
 
   } catch (err) {
     console.error("Vector search error:", err);
